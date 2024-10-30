@@ -28,7 +28,7 @@ resource "aws_subnet" "public" {
   vpc_id     = aws_vpc.main.id
   cidr_block = var.public_subnet_cidrs[count.index]
   availability_zone = local.az_name[count.index]
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = true    # enable public IP
 
 tags = merge(
     var.common_tags,
@@ -86,6 +86,14 @@ tags = merge(
 # create elastic/public ip
 resource "aws_eip" "nat" {
   domain = "vpc"
+
+  tags = merge(
+    var.common_tags,
+    var.eip_tags,
+    {
+      Name = "${local.resource_name}-eip"
+    }
+  )
 }
 # create NAT gateway
 resource "aws_nat_gateway" "main" {
@@ -103,5 +111,80 @@ resource "aws_nat_gateway" "main" {
 # on the internet gateway for the VPC
 depends_on = [ aws_internet_gateway.gw ]
 }
+# create public route table
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+
+tags = merge(
+    var.common_tags,
+    var.public_route_table_tags,
+    {
+      Name = "${local.resource_name}-public"
+    }
+  )
+}
+# create private route table
+resource "aws_route_table" "private" {
+  vpc_id = aws_vpc.main.id
+
+tags = merge(
+    var.common_tags,
+    var.private_route_table_tags,
+    {
+      Name = "${local.resource_name}-private"
+    }
+  )
+}
+# create database route table
+resource "aws_route_table" "database" {
+  vpc_id = aws_vpc.main.id
+
+tags = merge(
+    var.common_tags,
+    var.database_route_table_tags,
+    {
+      Name = "${local.resource_name}-database"
+    }
+  )
+}
+# create public routes
+resource "aws_route" "public" {
+  route_table_id            = aws_route_table.public.id
+  destination_cidr_block    = "0.0.0.0/0"
+  gateway_id = aws_internet_gateway.gw.id
+}
+# create private routes
+resource "aws_route" "private" {
+  route_table_id            = aws_route_table.private.id
+  destination_cidr_block    = "0.0.0.0/0"
+  nat_gateway_id = aws_nat_gateway.main.id
+}
+# create public routes
+resource "aws_route" "database" {
+  route_table_id            = aws_route_table.database.id
+  destination_cidr_block    = "0.0.0.0/0"
+  nat_gateway_id = aws_nat_gateway.main.id
+}
+# associate public route --> 2 public subnets
+resource "aws_route_table_association" "public" {
+  count = length(var.public_subnet_cidrs)
+  subnet_id = aws_subnet.public[count.index].id
+  route_table_id = aws_route_table.public.id
+}
+
+# associate private route --> 2 private subnets
+resource "aws_route_table_association" "private" {
+  count = length(var.private_subnet_cidrs)
+  subnet_id = aws_subnet.private[count.index].id
+  route_table_id = aws_route_table.private.id
+}
+# associate database route --> 2 database subnets
+resource "aws_route_table_association" "database" {
+  count = length(var.database_subnet_cidrs)
+  subnet_id = aws_subnet.database[count.index].id
+  route_table_id = aws_route_table.database.id
+}
+
+
 
 
