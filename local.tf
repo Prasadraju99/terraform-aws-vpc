@@ -1,5 +1,5 @@
-locals {    # to define names for the resources/naming convention
+locals { # to define names for the resources/naming convention
   resource_name = "${var.project_name}-${var.environment}"
-  az_name = slice(data.aws_availability_zones.available.names, 0, 2)
+  az_name       = slice(data.aws_availability_zones.available.names, 0, 2)
 }
 

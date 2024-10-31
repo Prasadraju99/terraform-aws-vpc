@@ -1,4 +1,4 @@
-variable "project_name" {   # define all default variables
+variable "project_name" { # define all default variables
   default = true
 }
 
@@ -27,25 +27,25 @@ variable "igw_tags" {
 }
 
 variable "public_subnet_cidrs" {
-  type = list
+  type = list(any)
   validation {
-    condition = length(var.public_subnet_cidrs) == 2
+    condition     = length(var.public_subnet_cidrs) == 2
     error_message = "please provide 2 valid public subnet cidrs"
   }
 }
 
 variable "private_subnet_cidrs" {
-  type = list
+  type = list(any)
   validation {
-    condition = length(var.private_subnet_cidrs) == 2
+    condition     = length(var.private_subnet_cidrs) == 2
     error_message = "please provide 2 valid private subnet cidrs"
   }
 }
 
 variable "database_subnet_cidrs" {
-  type = list
+  type = list(any)
   validation {
-    condition = length(var.database_subnet_cidrs) == 2
+    condition     = length(var.database_subnet_cidrs) == 2
     error_message = "please provide 2 valid database subnet cidrs"
   }
 }
@@ -85,4 +85,16 @@ variable "private_route_table_tags" {
 variable "database_route_table_tags" {
   default = {}
 }
+
+variable "is_peering_required" {
+  type    = bool
+  default = false
+}
+
+variable "vpc_perring_tags" {
+  default = {}
+}
+
+
+
 
